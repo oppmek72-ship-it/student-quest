@@ -5,11 +5,13 @@ export default function StudentManager({
   students,
   onAdjustCoins,
   onReset,
+  onDelete,
   onCreateStudent,
   showToast,
 }) {
   const [coinAmounts, setCoinAmounts] = useState({});
   const [confirmReset, setConfirmReset] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const [newName, setNewName] = useState("");
   const [newGrade, setNewGrade] = useState("ມ1");
 
@@ -231,6 +233,7 @@ export default function StudentManager({
               </div>
 
               {/* Reset */}
+              {/* Reset */}
               {confirmReset === s.id ? (
                 <div
                   style={{
@@ -239,6 +242,7 @@ export default function StudentManager({
                     borderRadius: 12,
                     padding: 12,
                     textAlign: "center",
+                    marginBottom: 8,
                   }}
                 >
                   <p
@@ -279,10 +283,68 @@ export default function StudentManager({
                     padding: "6px",
                     fontSize: 11,
                     color: "var(--accent3)",
+                    marginBottom: 4,
                   }}
                   onClick={() => setConfirmReset(s.id)}
                 >
                   🔄 Reset ນັກຮຽນ
+                </button>
+              )}
+
+              {/* Delete */}
+              {confirmDelete === s.id ? (
+                <div
+                  style={{
+                    background: "rgba(200,0,0,0.1)",
+                    border: "1px solid rgba(200,0,0,0.3)",
+                    borderRadius: 12,
+                    padding: 12,
+                    textAlign: "center",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: "#c00",
+                      fontWeight: 700,
+                      marginBottom: 8,
+                    }}
+                  >
+                    ⚠️ ລົບ "{s.name}" ອອກຈາກລະບົບ? ຂໍ້ມູນທັງໝົດຈະຫາຍໄປ!
+                  </p>
+                  <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+                    <button
+                      className="btn-danger"
+                      style={{ padding: "6px 14px", fontSize: 12 }}
+                      onClick={() => {
+                        onDelete(s.id);
+                        showToast(`🗑️ ລົບ ${s.name} ອອກແລ້ວ`);
+                        setConfirmDelete(null);
+                      }}
+                    >
+                      🗑️ ຢືນຢັນລົບ
+                    </button>
+                    <button
+                      className="btn-ghost"
+                      style={{ padding: "6px 14px", fontSize: 12 }}
+                      onClick={() => setConfirmDelete(null)}
+                    >
+                      ❌ ຍົກເລີກ
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  className="btn-ghost"
+                  style={{
+                    width: "100%",
+                    padding: "6px",
+                    fontSize: 11,
+                    color: "#c00",
+                  }}
+                  onClick={() => setConfirmDelete(s.id)}
+                >
+                  🗑️ ລົບນັກຮຽນ
                 </button>
               )}
             </div>

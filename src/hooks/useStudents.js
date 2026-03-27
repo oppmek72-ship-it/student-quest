@@ -249,6 +249,10 @@ export default function useStudents() {
     }));
   }, [updateStudent]);
 
+  const deleteStudent = useCallback((studentId) => {
+    setStudents((prev) => prev.filter((s) => s.id !== studentId));
+  }, []);
+
   const handleBuySkill = useCallback(
     (skillId, cost) => {
       if (!currentId) return;
@@ -279,6 +283,8 @@ export default function useStudents() {
     [currentId, updateStudent]
   );
 
+  const BATTLE_COIN_STAKE = 5;
+
   const handleBattleResult = useCallback(
     (winnerId, loserId) => {
       updateStudent(winnerId, (s) => {
@@ -291,6 +297,7 @@ export default function useStudents() {
         }
         return {
           ...s,
+          coins: (s.coins || 0) + BATTLE_COIN_STAKE,
           battleXP: remainXP,
           battleLevel: newLevel,
           arenaRating: Math.max(0, (s.arenaRating || 1000) + RATING_WIN),
@@ -311,6 +318,7 @@ export default function useStudents() {
         }
         return {
           ...s,
+          coins: Math.max(0, (s.coins || 0) - BATTLE_COIN_STAKE),
           battleXP: remainXP,
           battleLevel: newLevel,
           arenaRating: Math.max(0, (s.arenaRating || 1000) - RATING_LOSE),
@@ -344,6 +352,7 @@ export default function useStudents() {
     handlePetMerge,
     adjustStudentCoins,
     resetStudent,
+    deleteStudent,
     handleBuySkill,
     handleEquipSkill,
     handleBattleResult,

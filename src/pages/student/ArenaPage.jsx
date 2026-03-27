@@ -11,6 +11,7 @@ import SkillShop from "../../components/battle/SkillShop";
 import PixelAvatar from "../../components/avatar/PixelAvatar";
 
 const VIEW = { LOBBY: 0, SELECT: 1, BATTLE: 2, RESULT: 3, SHOP: 4 };
+const BATTLE_COIN_STAKE = 5;
 
 export default function ArenaPage({
   student, students, onBattleResult, onBuySkill, onEquipSkill, showToast,
@@ -108,12 +109,39 @@ export default function ArenaPage({
             </div>
           </div>
 
+          {/* Coin stake info */}
+          <div style={{
+            marginTop: 12, background: "linear-gradient(135deg, rgba(255,209,102,0.1), rgba(239,71,111,0.1))",
+            borderRadius: 16, padding: 12, border: "1px solid var(--border)",
+            textAlign: "center",
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--accent2)" }}>
+              💰 ເດີມພັນ: {BATTLE_COIN_STAKE} ຫຼຽນ/ຄັ້ງ
+            </div>
+            <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 4 }}>
+              ຜູ້ຊະນະ +{BATTLE_COIN_STAKE} 🪙 | ຜູ້ແພ້ -{BATTLE_COIN_STAKE} 🪙
+            </div>
+            {(student.coins || 0) < BATTLE_COIN_STAKE && (
+              <div style={{ fontSize: 12, color: "#e74c3c", fontWeight: 700, marginTop: 6 }}>
+                ⚠️ ຫຼຽນບໍ່ພຽງພໍ! ຕ້ອງມີຢ່າງໜ້ອຍ {BATTLE_COIN_STAKE} ຫຼຽນ
+              </div>
+            )}
+          </div>
+
           {/* Action buttons */}
           <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
             <button
               className="btn-primary"
-              style={{ flex: 1, padding: "14px 0", fontSize: 16, borderRadius: 16 }}
+              style={{
+                flex: 1, padding: "14px 0", fontSize: 16, borderRadius: 16,
+                opacity: (student.coins || 0) < BATTLE_COIN_STAKE ? 0.5 : 1,
+              }}
+              disabled={(student.coins || 0) < BATTLE_COIN_STAKE}
               onClick={() => {
+                if ((student.coins || 0) < BATTLE_COIN_STAKE) {
+                  showToast?.(`❌ ຕ້ອງມີຢ່າງໜ້ອຍ ${BATTLE_COIN_STAKE} ຫຼຽນ!`);
+                  return;
+                }
                 if (opponents.length === 0) {
                   showToast?.("❌ ບໍ່ມີຄູ່ຕໍ່ສູ້!");
                   return;
@@ -121,7 +149,7 @@ export default function ArenaPage({
                 setView(VIEW.SELECT);
               }}
             >
-              ⚔️ ທ້າສູ້!
+              ⚔️ ທ້າສູ້! ({BATTLE_COIN_STAKE} 🪙)
             </button>
             <button
               className="btn-gold"
@@ -166,8 +194,16 @@ export default function ArenaPage({
       {/* ===== OPPONENT SELECT ===== */}
       {view === VIEW.SELECT && (
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "var(--text)" }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8, color: "var(--text)" }}>
             🎯 ເລືອກຄູ່ຕໍ່ສູ້
+          </div>
+          <div style={{
+            fontSize: 12, color: "var(--accent2)", fontWeight: 600,
+            marginBottom: 12, textAlign: "center",
+            padding: "6px 12px", background: "rgba(255,209,102,0.1)",
+            borderRadius: 10,
+          }}>
+            💰 ເດີມພັນ {BATTLE_COIN_STAKE} ຫຼຽນ — ຫຼຽນຂອງເຈົ້າ: 🪙 {student.coins || 0}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {opponents.map((opp) => (
@@ -239,8 +275,16 @@ export default function ArenaPage({
 
             {/* Rewards */}
             <div style={{
-              display: "flex", justifyContent: "center", gap: 16, marginTop: 12,
+              display: "flex", justifyContent: "center", gap: 12, marginTop: 12,
+              flexWrap: "wrap",
             }}>
+              <div style={{
+                background: "var(--bg-card)", borderRadius: 12,
+                padding: "8px 16px", fontSize: 13, fontWeight: 600,
+                color: won ? "#2ecc71" : "#e74c3c",
+              }}>
+                🪙 {won ? `+${BATTLE_COIN_STAKE}` : `-${BATTLE_COIN_STAKE}`} ຫຼຽນ
+              </div>
               <div style={{
                 background: "var(--bg-card)", borderRadius: 12,
                 padding: "8px 16px", fontSize: 13, fontWeight: 600,

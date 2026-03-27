@@ -53,6 +53,7 @@ export default function App() {
     handlePetMerge,
     adjustStudentCoins,
     resetStudent,
+    deleteStudent,
     handleBuySkill,
     handleEquipSkill,
     handleBattleResult,
@@ -166,6 +167,7 @@ export default function App() {
               students={students}
               onAdjustCoins={adjustStudentCoins}
               onReset={resetStudent}
+              onDelete={deleteStudent}
               onCreateStudent={createStudent}
               showToast={showToast}
             />
