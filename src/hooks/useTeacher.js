@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { dbListen, dbSet } from "../utils/firebase";
 import { loadJSON, saveJSON, STORAGE_KEYS } from "../utils/storage";
 import { DEFAULT_QUIZ_BANK } from "../constants/defaultQuiz";
 
@@ -29,50 +30,98 @@ export default function useTeacher() {
   const [categories, setCategories] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
-  // Load on mount
+  const fromFB_teachers = useRef(false);
+  const fromFB_questions = useRef(false);
+  const fromFB_categories = useRef(false);
+  const seeded = useRef(false);
+
+  // Load from Firebase with localStorage fallback
   useEffect(() => {
-    const t = loadJSON(STORAGE_KEYS.TEACHERS, []);
-    setTeachers(t);
+    // Load cached data first
+    const cachedT = loadJSON(STORAGE_KEYS.TEACHERS, []);
+    const cachedC = loadJSON(STORAGE_KEYS.CATEGORIES, null);
+    const cachedQ = loadJSON(STORAGE_KEYS.QUESTIONS, null);
+    if (cachedT.length > 0) setTeachers(cachedT);
+    if (cachedC) setCategories(cachedC);
+    if (cachedQ) setQuestions(cachedQ);
 
-    let cats = loadJSON(STORAGE_KEYS.CATEGORIES, null);
-    if (!cats) {
-      cats = [DEFAULT_CATEGORY];
-      saveJSON(STORAGE_KEYS.CATEGORIES, cats);
-    }
-    setCategories(cats);
+    const unsub1 = dbListen("teachers", (data) => {
+      const arr = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+      fromFB_teachers.current = true;
+      setTeachers(arr);
+      saveJSON(STORAGE_KEYS.TEACHERS, arr);
+    });
 
-    let qs = loadJSON(STORAGE_KEYS.QUESTIONS, null);
-    if (!qs) {
-      qs = seedDefaultQuestions();
-      saveJSON(STORAGE_KEYS.QUESTIONS, qs);
-    }
-    setQuestions(qs);
+    const unsub2 = dbListen("categories", (data) => {
+      let arr = data ? (Array.isArray(data) ? data : Object.values(data)) : null;
+      if (!arr || arr.length === 0) {
+        if (!seeded.current) {
+          seeded.current = true;
+          arr = [DEFAULT_CATEGORY];
+          dbSet("categories", arr);
+        } else {
+          arr = [DEFAULT_CATEGORY];
+        }
+      }
+      fromFB_categories.current = true;
+      setCategories(arr);
+      saveJSON(STORAGE_KEYS.CATEGORIES, arr);
+    });
 
-    setLoaded(true);
+    const unsub3 = dbListen("questions", (data) => {
+      let arr = data ? (Array.isArray(data) ? data : Object.values(data)) : null;
+      if (!arr || arr.length === 0) {
+        if (!seeded.current) {
+          arr = seedDefaultQuestions();
+          dbSet("questions", arr);
+        } else {
+          arr = seedDefaultQuestions();
+        }
+      }
+      fromFB_questions.current = true;
+      setQuestions(arr);
+      setLoaded(true);
+      saveJSON(STORAGE_KEYS.QUESTIONS, arr);
+    });
+
+    // Mark loaded after a short delay if Firebase hasn't responded
+    const timer = setTimeout(() => setLoaded(true), 1500);
+
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+      clearTimeout(timer);
+    };
   }, []);
 
-  // Save teachers
+  // Save teachers to Firebase
   useEffect(() => {
     if (!loaded) return;
+    if (fromFB_teachers.current) { fromFB_teachers.current = false; return; }
+    dbSet("teachers", teachers);
     saveJSON(STORAGE_KEYS.TEACHERS, teachers);
   }, [teachers, loaded]);
 
-  // Save questions
+  // Save questions to Firebase
   useEffect(() => {
     if (!loaded) return;
+    if (fromFB_questions.current) { fromFB_questions.current = false; return; }
+    dbSet("questions", questions);
     saveJSON(STORAGE_KEYS.QUESTIONS, questions);
   }, [questions, loaded]);
 
-  // Save categories
+  // Save categories to Firebase
   useEffect(() => {
     if (!loaded) return;
+    if (fromFB_categories.current) { fromFB_categories.current = false; return; }
+    dbSet("categories", categories);
     saveJSON(STORAGE_KEYS.CATEGORIES, categories);
   }, [categories, loaded]);
 
   const currentTeacher =
     teachers.find((t) => t.id === currentTeacherId) || null;
 
-  // Teacher auth
   const registerTeacher = useCallback((name, pin) => {
     const id = `t_${Date.now()}`;
     const newT = { id, name, pin };
@@ -98,7 +147,6 @@ export default function useTeacher() {
     setCurrentTeacherId(null);
   }, []);
 
-  // Category CRUD
   const addCategory = useCallback((name, emoji) => {
     const cat = {
       id: `cat_${Date.now()}`,
@@ -114,7 +162,6 @@ export default function useTeacher() {
     (catId) => {
       if (catId === "cat_default") return false;
       setCategories((prev) => prev.filter((c) => c.id !== catId));
-      // Move orphan questions to default category
       setQuestions((prev) =>
         prev.map((q) =>
           q.categoryId === catId ? { ...q, categoryId: "cat_default" } : q
@@ -125,7 +172,6 @@ export default function useTeacher() {
     []
   );
 
-  // Question CRUD
   const addQuestion = useCallback(
     (categoryId, question, options, correctIndex, coins) => {
       const q = {

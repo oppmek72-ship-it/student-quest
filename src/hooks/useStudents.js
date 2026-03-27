@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { dbListen, dbSet } from "../utils/firebase";
 import { loadJSON, saveJSON, STORAGE_KEYS } from "../utils/storage";
 import { GACHA_COST } from "../constants/pets";
 import { DEFAULT_PIXEL_AVATAR, FREE_PIXEL_ITEMS } from "../constants/avatarPixel";
@@ -7,32 +8,52 @@ import {
   DEFAULT_BATTLE_FIELDS,
   BATTLE_XP_WIN, BATTLE_XP_LOSE,
   RATING_WIN, RATING_LOSE,
-  XP_PER_LEVEL, MAX_LEVEL, getSkillById,
+  XP_PER_LEVEL, MAX_LEVEL,
 } from "../constants/battle";
+
+function migrateStudent(s) {
+  const m = ensureAvatarDefaults(migrateAvatar(s));
+  if (m.battleLevel === undefined) {
+    Object.assign(m, DEFAULT_BATTLE_FIELDS);
+  }
+  return m;
+}
 
 export default function useStudents() {
   const [students, setStudents] = useState([]);
   const [currentId, setCurrentId] = useState(null);
   const [loaded, setLoaded] = useState(false);
+  const fromFirebase = useRef(false);
 
-  // Load on mount — migrate old avatar data + ensure battle fields
+  // Load: Firebase listener (real-time sync) with localStorage fallback
   useEffect(() => {
-    const data = loadJSON(STORAGE_KEYS.STUDENTS, []);
-    const migrated = data.map((s) => {
-      const m = ensureAvatarDefaults(migrateAvatar(s));
-      // Ensure battle fields exist for older students
-      if (m.battleLevel === undefined) {
-        Object.assign(m, DEFAULT_BATTLE_FIELDS);
-      }
-      return m;
+    // Load cached data first for instant display
+    const cached = loadJSON(STORAGE_KEYS.STUDENTS, []);
+    if (cached.length > 0) {
+      setStudents(cached.map(migrateStudent));
+      setLoaded(true);
+    }
+
+    const unsub = dbListen("students", (data) => {
+      const arr = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+      const migrated = arr.map(migrateStudent);
+      fromFirebase.current = true;
+      setStudents(migrated);
+      setLoaded(true);
+      // Cache locally
+      saveJSON(STORAGE_KEYS.STUDENTS, migrated);
     });
-    setStudents(migrated);
-    setLoaded(true);
+    return unsub;
   }, []);
 
-  // Save on change
+  // Save: write to Firebase when students change (skip if change came from Firebase)
   useEffect(() => {
     if (!loaded) return;
+    if (fromFirebase.current) {
+      fromFirebase.current = false;
+      return;
+    }
+    dbSet("students", students);
     saveJSON(STORAGE_KEYS.STUDENTS, students);
   }, [students, loaded]);
 
@@ -89,7 +110,7 @@ export default function useStudents() {
       updateStudent(currentId, (s) => {
         const isNewDay = s.lastQuizDate !== today;
         const answersToday = isNewDay ? 0 : (s.quizAnswersToday || 0);
-        if (answersToday >= DAILY_QUIZ_LIMIT) return s; // limit reached
+        if (answersToday >= DAILY_QUIZ_LIMIT) return s;
         return {
           ...s,
           coins: s.coins + coins,
@@ -147,18 +168,15 @@ export default function useStudents() {
     [currentId, updateStudent]
   );
 
-  // New: equip avatar item (buy if needed)
   const handleEquip = useCallback(
     (category, itemId, cost) => {
       if (!currentId) return;
       updateStudent(currentId, (s) => {
         const updated = { ...s };
-        // Buy if not owned
         if (cost && !(s.ownedAvatarItems || []).includes(itemId)) {
           updated.coins = Math.max(0, s.coins - cost);
           updated.ownedAvatarItems = [...(s.ownedAvatarItems || []), itemId];
         }
-        // Equip to the correct avatar slot
         updated.avatar = { ...s.avatar, [category]: itemId };
         return updated;
       });
@@ -166,20 +184,17 @@ export default function useStudents() {
     [currentId, updateStudent]
   );
 
-  // New: equip entire outfit set
   const handleEquipSet = useCallback(
     (setPieces, totalCost, missingIds) => {
       if (!currentId) return;
       updateStudent(currentId, (s) => {
         const updated = { ...s };
-        // Buy missing items
         if (totalCost > 0) {
           updated.coins = Math.max(0, s.coins - totalCost);
           updated.ownedAvatarItems = [
             ...new Set([...(s.ownedAvatarItems || []), ...missingIds]),
           ];
         }
-        // Equip all pieces
         updated.avatar = { ...s.avatar, ...setPieces };
         return updated;
       });
@@ -213,7 +228,6 @@ export default function useStudents() {
     [currentId, updateStudent]
   );
 
-  // Teacher: adjust student coins
   const adjustStudentCoins = useCallback((studentId, amount) => {
     updateStudent(studentId, (s) => ({
       ...s,
@@ -234,8 +248,6 @@ export default function useStudents() {
       ...DEFAULT_BATTLE_FIELDS,
     }));
   }, [updateStudent]);
-
-  // --- Battle handlers ---
 
   const handleBuySkill = useCallback(
     (skillId, cost) => {
@@ -258,7 +270,6 @@ export default function useStudents() {
       if (!currentId) return;
       updateStudent(currentId, (s) => {
         const slots = [...(s.equippedSkills || [null, null, null, null])];
-        // Remove skill from other slot if already equipped
         const existIdx = slots.indexOf(skillId);
         if (existIdx >= 0) slots[existIdx] = null;
         slots[slotIndex] = skillId;
@@ -270,7 +281,6 @@ export default function useStudents() {
 
   const handleBattleResult = useCallback(
     (winnerId, loserId) => {
-      // Update winner
       updateStudent(winnerId, (s) => {
         const newXP = (s.battleXP || 0) + BATTLE_XP_WIN;
         let newLevel = s.battleLevel || 1;
@@ -291,7 +301,6 @@ export default function useStudents() {
           ],
         };
       });
-      // Update loser
       updateStudent(loserId, (s) => {
         const newXP = (s.battleXP || 0) + BATTLE_XP_LOSE;
         let newLevel = s.battleLevel || 1;
