@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@300;400;500;600;700;800;900&family=Bungee+Shade&family=Fredoka:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg-dark: #0a0e27;
+  --bg-card: rgba(15,20,50,0.85);
+  --bg-card2: rgba(20,28,65,0.75);
+  --accent: #06d6a0;
+  --accent2: #ffd166;
+  --accent3: #ef476f;
+  --accent4: #118ab2;
+  --text: #e8eaf6;
+  --text-dim: #7986cb;
+  --text-dimmer: #3f51b5;
+  --border: rgba(99,110,180,0.25);
+  --glow-green: rgba(6,214,160,0.4);
+  --glow-gold: rgba(255,209,102,0.4);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans Lao','Fredoka',sans-serif;
+  background: var(--bg-dark);
+  color: var(--text);
+}
+
+@keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+@keyframes popIn { from{opacity:0;transform:scale(0.7)} to{opacity:1;transform:scale(1)} }
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+@keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes glow { 0%,100%{box-shadow:0 0 15px var(--glow-green)} 50%{box-shadow:0 0 30px var(--glow-green),0 0 60px var(--glow-green)} }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+@keyframes emojiProjectile { 0%{transform:translate(0,0) scale(1);opacity:1} 70%{transform:translate(var(--proj-dx),0) scale(1.4);opacity:1} 100%{transform:translate(var(--proj-dx),0) scale(0.5);opacity:0} }
+@keyframes coinDrop { 0%{opacity:0;transform:translateY(-20px) rotateY(0)} 50%{opacity:1;transform:translateY(0) rotateY(180deg)} 100%{opacity:0;transform:translateY(20px) rotateY(360deg)} }
+@keyframes slotSpin { 0%{transform:translateY(0)} 100%{transform:translateY(-100%)} }
+@keyframes legendaryGlow { 0%,100%{box-shadow:0 0 20px rgba(251,191,36,0.4),0 0 40px rgba(251,191,36,0.2)} 50%{box-shadow:0 0 40px rgba(251,191,36,0.7),0 0 80px rgba(251,191,36,0.3)} }
+@keyframes rainbowBorder { 0%{border-color:#ef476f} 25%{border-color:#ffd166} 50%{border-color:#06d6a0} 75%{border-color:#118ab2} 100%{border-color:#ef476f} }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+@keyframes toastSlide { from{transform:translateX(-50%) translateY(20px);opacity:0} to{transform:translateX(-50%) translateY(0);opacity:1} }
+@keyframes avatarBreathe { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+@keyframes sparkle { 0%,100%{opacity:0;transform:scale(0.5)} 50%{opacity:1;transform:scale(1)} }
+@keyframes pixelBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+
+.avatar-breathe { animation: avatarBreathe 3s ease-in-out infinite; }
+.sparkle-effect circle { animation: sparkle 2s ease-in-out infinite; }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--text-dimmer); border-radius: 3px; }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #05c28e);
+  border: none; border-radius: 14px; padding: 12px 28px;
+  color: #0a0e27; font-weight: 700; font-size: 15px; cursor: pointer;
+  font-family: 'Noto Sans Lao','Fredoka',sans-serif;
+  transition: all 0.2s; box-shadow: 0 4px 15px var(--glow-green);
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 25px var(--glow-green); }
+.btn-primary:active { transform: scale(0.97); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-gold {
+  background: linear-gradient(135deg, var(--accent2), #e6b800);
+  border: none; border-radius: 14px; padding: 12px 28px;
+  color: #0a0e27; font-weight: 700; font-size: 15px; cursor: pointer;
+  font-family: 'Noto Sans Lao','Fredoka',sans-serif;
+  transition: all 0.2s; box-shadow: 0 4px 15px var(--glow-gold);
+}
+.btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-ghost {
+  background: var(--bg-card2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 10px 20px; color: var(--text-dim);
+  font-weight: 600; font-size: 14px; cursor: pointer;
+  font-family: 'Noto Sans Lao','Fredoka',sans-serif; transition: all 0.2s;
+}
+.btn-ghost:hover { background: rgba(30,40,80,0.8); color: var(--text); border-color: var(--accent); }
+
+.btn-danger {
+  background: linear-gradient(135deg, var(--accent3), #d63a5e);
+  border: none; border-radius: 14px; padding: 10px 20px;
+  color: white; font-weight: 700; font-size: 14px; cursor: pointer;
+  font-family: 'Noto Sans Lao','Fredoka',sans-serif; transition: all 0.2s;
+}
+.btn-danger:hover { transform: translateY(-1px); }
+
+input, select, textarea {
+  background: rgba(10,14,39,0.8); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 16px; color: var(--text);
+  font-size: 15px; font-family: 'Noto Sans Lao',sans-serif;
+  outline: none; width: 100%; transition: border-color 0.2s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+select { appearance: none; cursor: pointer; }
+textarea { resize: vertical; min-height: 60px; }
